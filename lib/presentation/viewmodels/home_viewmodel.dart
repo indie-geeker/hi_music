@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hi_music/presentation/common/banner_slider.dart';
+
+import '../common/banner_widget.dart';
+
 
 /// HomeViewModel的状态
 class HomeState {
@@ -76,21 +78,18 @@ class HomeViewModel extends StateNotifier<HomeState> {
         BannerItem(
           title: "Shadow",
           artist: "Syn Cole",
-          album: "ALIDA",
           imageUrl: "assets/images/img1.jpg",
           color: const Color(0xFF0E7AC7),
         ),
         BannerItem(
           title: "Fireflies",
           artist: "Owl City",
-          album: "Ocean Eyes",
           imageUrl: "assets/images/img2.jpg",
           color: const Color(0xFF5D11AB),
         ),
         BannerItem(
           title: "Starboy",
           artist: "The Weeknd",
-          album: "Starboy",
           imageUrl: "assets/images/img2.jpg",
           color: const Color(0xFFEC441E),
         ),

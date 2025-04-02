@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hi_music/presentation/common/splash.dart';
 import 'package:hi_music/main.dart';
 import 'package:hi_music/presentation/mobile/home_screen.dart';
+import 'package:hi_music/presentation/mobile/home_screen2.dart';
 
 // 应用路由配置
 final GoRouter appRouter = GoRouter(
@@ -14,7 +15,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/home',
-      builder: (context, state) => const HomeScreen(),
+      builder: (context, state) => const HomeScreen2(),
     ),
   ],
 );
