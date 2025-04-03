@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hi_music/presentation/common/banner_widget.dart';
+import 'package:hi_music/presentation/common/banner_slider.dart';
 import 'package:hi_music/presentation/viewmodels/home_viewmodel.dart';
 
 class HomeScreen2 extends ConsumerStatefulWidget {
@@ -50,6 +50,11 @@ class _MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
 }
 
 class _HomeScreen2State extends ConsumerState<HomeScreen2> {
+  //   // AppBar背景透明度
+  double appBarOpacity = 1.0;
+  Color appBarTitleColor = Colors.white;
+  Color bannerColor = Colors.blue; 
+
   @override
   void initState() {
     super.initState();
@@ -63,10 +68,54 @@ class _HomeScreen2State extends ConsumerState<HomeScreen2> {
   Widget build(BuildContext context) {
     final state = ref.watch(homeViewModelProvider);
 
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text("title"),
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight),
+        child: Stack(
+          children: [
+            // appbar 渐变背景
+            Positioned.fill(
+              child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    bannerColor.withOpacity(appBarOpacity * 0.8),
+                    bannerColor.withOpacity(0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.6,1.0]
+                ),
+              ),
+            ),
+            ),
+
+            AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              title: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: appBarOpacity.clamp(0, 1),
+                child: Text(
+                  "title",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: appBarTitleColor,
+                  shadows: [
+                    Shadow(
+                      color: appBarTitleColor.withOpacity(0.5),
+                      offset: const Offset(1, 1),
+                      blurRadius: 2,
+                    )
+                  ]
+                ),
+                ),
+              ),
+            )
+          ],
+        ),
+
       ),
       body: SafeArea(
         child: CustomScrollView(
@@ -75,20 +124,27 @@ class _HomeScreen2State extends ConsumerState<HomeScreen2> {
             //   child: BannerWidget(),
             // ),
             SliverAppBar(
-              expandedHeight: 180,  // 展开时的高度
+              expandedHeight: 205,  // 展开时的高度
               collapsedHeight: 60,  // 收起时的高度
               pinned: false,
               floating: true,       // 向下滑动时立即显示
               snap: true,           // 与floating配合，决定是否在滑动时直接展开到完整高度
               flexibleSpace: FlexibleSpaceBar(
-                background: BannerWidget(
+                background: BannerSlider(
                   height: 180,
                   items: state.bannerItems,
-                  viewportFraction: 0.7,
+                  viewportFraction: 0.8,
                   stackOffset: 30,
+                  onPageChanged: (index){
+                    debugPrint("banner change to $index");
+                    setState(() {
+                      bannerColor =  state.bannerItems[index].color;
+                    });
+                  },
                 ),  // 展开时显示的内容
-                centerTitle: false,
-                titlePadding: EdgeInsets.only(left: 16, bottom: 16),
+                // title: Text("title"),
+                // centerTitle: false,
+                // titlePadding: EdgeInsets.only(left: 16, bottom: 16),
               ),
             ),
             SliverPersistentHeader(
@@ -101,19 +157,27 @@ class _HomeScreen2State extends ConsumerState<HomeScreen2> {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
-                  return Column(
-                    children: [
-                      Text("item $index"),
-                      if (index < 29) const Divider(),
-                    ],
-                  );
+                  return _buildSongItem(context,state.songItems[index]);
                 },
-                childCount: 30,
+                childCount: state.songItems.length
               ),
             )
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSongItem(BuildContext context, SongItem songItem) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.grey[200],
+        child: const Icon(Icons.music_note, color: Colors.green),
+      ),
+      title: Text(songItem.title),
+      subtitle: Text(songItem.artist),
+      trailing: Text(songItem.duration),
+      onTap: () => ref.read(homeViewModelProvider.notifier).onSongSelected(songItem),
     );
   }
 }

@@ -1,7 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
-import '../common/banner_widget.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hi_music/utils/palette_generator.dart';
+
+import '../common/banner_slider.dart';
 
 
 /// HomeViewModel的状态
@@ -64,63 +69,79 @@ class SongItem {
 class HomeViewModel extends StateNotifier<HomeState> {
   HomeViewModel() : super(const HomeState());
 
-  /// 加载数据
-  Future<void> loadData() async {
-    // 设置加载状态
-    state = state.copyWith(isLoading: true, errorMessage: null);
+/// 加载数据
+Future<void> loadData() async {
+  // 设置加载状态
+  state = state.copyWith(isLoading: true, errorMessage: null);
+  
+  try {
+    // 模拟网络请求延迟
+    await Future.delayed(const Duration(milliseconds: 500));
     
-    try {
-      // 模拟网络请求延迟
-      await Future.delayed(const Duration(milliseconds: 500));
+    // 加载图像并提取颜色
+    final List<BannerItem> bannerItems = [];
+    
+    // 示例：从资源加载图像并提取颜色
+    for (String imagePath in ['assets/images/img1.jpg', 'assets/images/img2.jpg']) {
+      // 1. 加载图像为 ui.Image
+      final ByteData data = await rootBundle.load(imagePath);
+      final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final ui.FrameInfo frameInfo = await codec.getNextFrame();
+      final ui.Image image = frameInfo.image;
       
-      // 模拟Banner数据
-      final bannerItems = [
-        BannerItem(
-          title: "Shadow",
-          artist: "Syn Cole",
-          imageUrl: "assets/images/img1.jpg",
-          color: const Color(0xFF0E7AC7),
-        ),
-        BannerItem(
-          title: "Fireflies",
-          artist: "Owl City",
-          imageUrl: "assets/images/img2.jpg",
-          color: const Color(0xFF5D11AB),
-        ),
-        BannerItem(
-          title: "Starboy",
-          artist: "The Weeknd",
-          imageUrl: "assets/images/img2.jpg",
-          color: const Color(0xFFEC441E),
-        ),
-      ];
+      // 2. 使用 PaletteGenerator 提取颜色
+      final PaletteGenerator palette = await PaletteGenerator.fromImage(image);
       
-      // 模拟歌曲列表数据
-      final songItems = List.generate(
-        30,
-        (index) => SongItem(
-          id: 'song_$index',
-          title: "歌曲 ${index + 1}",
-          artist: "歌手 ${index % 5 + 1}",
-          duration: "${2 + index % 3}:${30 + index % 30}",
-          playCount: 1000 - (index * 30),
-        ),
-      );
+      // 3. 使用提取的颜色（优先使用 vibrantColor，如果没有则使用默认颜色）
+      final Color itemColor = palette.vibrantColor?.color ?? const Color(0xFF0E7AC7);
       
-      // 更新状态
-      state = state.copyWith(
-        bannerItems: bannerItems,
-        songItems: songItems,
-        isLoading: false,
-      );
-    } catch (e) {
-      // 处理错误
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: "加载数据失败: $e",
+      // 4. 创建 BannerItem 并添加到列表
+      bannerItems.add(
+        BannerItem(
+          title: imagePath.contains('img1') ? "Shadow" : "Fireflies",
+          artist: imagePath.contains('img1') ? "Syn Cole" : "Owl City",
+          imageUrl: imagePath,
+          color: itemColor,
+        ),
       );
     }
+    
+    // 添加第三个 banner（示例中使用了固定颜色）
+    bannerItems.add(
+      BannerItem(
+        title: "Starboy",
+        artist: "The Weeknd",
+        imageUrl: "assets/images/img2.jpg",
+        color: const Color(0xFFEC441E),
+      ),
+    );
+    
+    // 模拟歌曲列表数据
+    final songItems = List.generate(
+      30,
+      (index) => SongItem(
+        id: 'song_$index',
+        title: "歌曲 ${index + 1}",
+        artist: "歌手 ${index % 5 + 1}",
+        duration: "${2 + index % 3}:${30 + index % 30}",
+        playCount: 1000 - (index * 30),
+      ),
+    );
+    
+    // 更新状态
+    state = state.copyWith(
+      bannerItems: bannerItems,
+      songItems: songItems,
+      isLoading: false,
+    );
+  } catch (e) {
+    // 处理错误
+    state = state.copyWith(
+      isLoading: false,
+      errorMessage: "加载数据失败: $e",
+    );
   }
+}
   
   /// 处理Banner选择事件
   void onBannerSelected(int index) {
