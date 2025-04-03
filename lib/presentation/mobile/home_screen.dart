@@ -169,15 +169,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildSongItem(BuildContext context, SongItem songItem) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.grey[200],
-        child: const Icon(Icons.music_note, color: Colors.green),
-      ),
-      title: Text(songItem.title),
-      subtitle: Text(songItem.artist),
-      trailing: Text(songItem.duration),
-      onTap: () => ref.read(homeViewModelProvider.notifier).onSongSelected(songItem),
+    return Column(
+      children: [
+        ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Colors.grey[200],
+            child: const Icon(Icons.music_note, color: Colors.green),
+          ),
+          title: Text(songItem.title),
+          subtitle: Text(songItem.artist),
+          trailing: Text(songItem.duration),
+          onTap: () => ref.read(homeViewModelProvider.notifier).onSongSelected(songItem),
+        ),
+        Divider(height: 1,color: Colors.grey[100],),
+      ],
     );
   }
 }
