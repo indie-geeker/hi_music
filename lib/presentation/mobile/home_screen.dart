@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hi_music/presentation/common/banner_slider.dart';
+import 'package:hi_music/presentation/mobile/collect_screen.dart';
+import 'package:hi_music/presentation/mobile/widgets/double_back_to_close_app.dart';
+import 'package:hi_music/presentation/mobile/widgets/home_bottom_appbar.dart';
 import 'package:hi_music/presentation/viewmodels/home_viewmodel.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -10,179 +13,84 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState createState() => _HomeScreenState();
 }
 
-// 自定义的SliverPersistentHeaderDelegate实现
-class _MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final String title;
-  final double height;
-
-  _MySliverPersistentHeaderDelegate({
-    required this.title,
-    this.height = 50.0,
-  });
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(
-      height: height,
-      color: Colors.white,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  bool shouldRebuild(_MySliverPersistentHeaderDelegate oldDelegate) {
-    return title != oldDelegate.title || height != oldDelegate.height;
-  }
-}
-
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  //   // AppBar背景透明度
-  double appBarOpacity = 1.0;
-  Color appBarTitleColor = Colors.white;
-  Color bannerColor = Colors.blue; 
+  List<Widget> pages = [
+    const Center(child: Text('音乐库', style: TextStyle(fontSize: 24))),
+    const CollectScreen(),
+    const Center(child: Text('个人中心', style: TextStyle(fontSize: 24))),
+  ];
+  int currentPage = 0;
+  final PageController pageController = PageController(
+    initialPage: 0,
+    keepPage: true,
+  );
 
   @override
   void initState() {
     super.initState();
-
-    Future.microtask((){
+    // 确保页面初始化完成后加载数据
+    Future.microtask(() {
       ref.read(homeViewModelProvider.notifier).loadData();
     });
   }
 
   @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final state = ref.watch(homeViewModelProvider);
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: Stack(
-          children: [
-            // appbar 渐变背景
-            Positioned.fill(
-              child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    bannerColor.withOpacity(appBarOpacity * 0.8),
-                    bannerColor.withOpacity(0),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0.6,1.0]
-                ),
-              ),
-            ),
-            ),
-
-            AppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              title: AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: appBarOpacity.clamp(0, 1),
-                child: Text(
-                  "title",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: appBarTitleColor,
-                  shadows: [
-                    Shadow(
-                      color: appBarTitleColor.withOpacity(0.5),
-                      offset: const Offset(1, 1),
-                      blurRadius: 2,
-                    )
-                  ]
-                ),
-                ),
-              ),
-            )
-          ],
+      extendBody: true,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: SizedBox(
+        width: 72.0,
+        height: 72.0,
+        child: FloatingActionButton(
+          elevation: currentPage == 1 ? 8.0 : 2.0,
+          backgroundColor: currentPage == 1
+              ? Colors.blue.withOpacity(0.7)
+              : Colors.grey.withOpacity(0.7),
+          shape: const CircleBorder(side: BorderSide.none),
+          onPressed: () {
+            setState(() {
+              currentPage = 1;
+              pageController.jumpToPage(1);
+            });
+          },
+          child: Icon(
+            Icons.music_note_outlined,
+            color: currentPage == 1 ? Colors.white : Colors.white70,
+            size: 60.0,
+          ),
         ),
-
       ),
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // SliverToBoxAdapter(
-            //   child: BannerWidget(),
-            // ),
-            SliverAppBar(
-              expandedHeight: 205,  // 展开时的高度
-              collapsedHeight: 60,  // 收起时的高度
-              pinned: false,
-              floating: true,       // 向下滑动时立即显示
-              snap: true,           // 与floating配合，决定是否在滑动时直接展开到完整高度
-              flexibleSpace: FlexibleSpaceBar(
-                background: BannerSlider(
-                  height: 180,
-                  items: state.bannerItems,
-                  viewportFraction: 0.8,
-                  stackOffset: 30,
-                  onPageChanged: (index){
-                    debugPrint("banner change to $index");
-                    setState(() {
-                      bannerColor =  state.bannerItems[index].color;
-                    });
-                  },
-                ),  // 展开时显示的内容
-                // title: Text("title"),
-                // centerTitle: false,
-                // titlePadding: EdgeInsets.only(left: 16, bottom: 16),
-              ),
-            ),
-            SliverPersistentHeader(
-              pinned: true, // 设置为true时，滚动时会固定在顶部
-              delegate: _MySliverPersistentHeaderDelegate(
-                title: "热门推荐",
-              ),
-            ),
-
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  return _buildSongItem(context,state.songItems[index]);
-                },
-                childCount: state.songItems.length
-              ),
-            )
-          ],
-        ),
+      body: _buildBody(),
+      bottomNavigationBar: HomeBottomAppBar(
+        currentIndex: currentPage,
+        onItemTapped: (int value) {
+          setState(() {
+            currentPage = value;
+            pageController.jumpToPage(value);
+          });
+        },
       ),
     );
   }
 
-  Widget _buildSongItem(BuildContext context, SongItem songItem) {
-    return Column(
-      children: [
-        ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.grey[200],
-            child: const Icon(Icons.music_note, color: Colors.green),
-          ),
-          title: Text(songItem.title),
-          subtitle: Text(songItem.artist),
-          trailing: Text(songItem.duration),
-          onTap: () => ref.read(homeViewModelProvider.notifier).onSongSelected(songItem),
-        ),
-        Divider(height: 1,color: Colors.grey[100],),
-      ],
-    );
+  Widget _buildBody() {
+    return DoubleBackToCloseApp(
+        child: PageView(
+      // physics: const NeverScrollableScrollPhysics(),
+      controller: pageController,
+      onPageChanged: (index) {
+        setState(() {
+          currentPage = index;
+        });
+      },
+      children: pages,
+    ));
   }
 }
