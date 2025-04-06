@@ -6,9 +6,6 @@ part 'splash_provider.g.dart';
 
 // 使用Riverpod代码生成的方式定义Provider
 @riverpod
-SplashViewModel splashViewModel(SplashViewModelRef ref) {
+SplashViewModel splashViewModel(Ref ref) {
   return SplashViewModel();
 }
-
-// 移除旧的Provider定义，避免名称冲突
-// 现在我们只使用自动生成的Provider

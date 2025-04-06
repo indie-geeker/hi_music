@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hi_music/presentation/viewmodels/play_viewmodel.dart';
 import 'package:hi_music/utils/palette_generator.dart';
 
 import '../common/banner_slider.dart';
@@ -16,6 +18,7 @@ class HomeState {
   final bool isLoading;
   final String? errorMessage;
   final SortOrder sortOrder;
+  final List<Uint8List> images;
 
   const HomeState({
     this.bannerItems = const [],
@@ -23,6 +26,7 @@ class HomeState {
     this.isLoading = false,
     this.errorMessage,
     this.sortOrder = SortOrder.newest,
+    this.images = const [],
   });
 
   // 创建一个新的状态实例
@@ -32,6 +36,7 @@ class HomeState {
     bool? isLoading,
     String? errorMessage,
     SortOrder? sortOrder,
+    List<Uint8List>? images,
   }) {
     return HomeState(
       bannerItems: bannerItems ?? this.bannerItems,
@@ -39,6 +44,7 @@ class HomeState {
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       sortOrder: sortOrder ?? this.sortOrder,
+      images: images ?? this.images,
     );
   }
 }
@@ -67,7 +73,10 @@ class SongItem {
 /// 
 /// 负责首页的业务逻辑和数据处理
 class HomeViewModel extends StateNotifier<HomeState> {
-  HomeViewModel() : super(const HomeState());
+  final Ref ref;
+  HomeViewModel({
+    required this.ref,
+}) : super(const HomeState());
 
 /// 加载数据
 Future<void> loadData() async {
@@ -82,13 +91,17 @@ Future<void> loadData() async {
     final List<BannerItem> bannerItems = [];
     
     // 示例：从资源加载图像并提取颜色
+    List<Uint8List> images = [];
     for (String imagePath in ['assets/images/img1.jpg', 'assets/images/img2.jpg']) {
       // 1. 加载图像为 ui.Image
       final ByteData data = await rootBundle.load(imagePath);
-      final ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final rawData = data.buffer.asUint8List();
+      final ui.Codec codec = await ui.instantiateImageCodec(rawData);
       final ui.FrameInfo frameInfo = await codec.getNextFrame();
       final ui.Image image = frameInfo.image;
-      
+
+      images.add(rawData);
+
       // 2. 使用 PaletteGenerator 提取颜色
       final PaletteGenerator palette = await PaletteGenerator.fromImage(image);
       
@@ -105,6 +118,7 @@ Future<void> loadData() async {
         ),
       );
     }
+    state = state.copyWith(images: images);
     
     // 添加第三个 banner（示例中使用了固定颜色）
     bannerItems.add(
@@ -147,6 +161,8 @@ Future<void> loadData() async {
   void onBannerSelected(int index) {
     // 在实际应用中，这里可能会导航到详情页或播放音乐
     debugPrint('选择了Banner: ${state.bannerItems[index].title}');
+    Uint8List rawData = state.images[index];
+    ref.read(playViewmodelProvider.notifier).setImage(rawData);
   }
   
   /// 处理歌曲选择事件
@@ -203,7 +219,7 @@ Future<void> loadData() async {
   }
 }
 
-/// HomeViewModel的Provider
+// /// HomeViewModel的Provider
 final homeViewModelProvider = StateNotifierProvider<HomeViewModel, HomeState>((ref) {
-  return HomeViewModel();
+  return HomeViewModel(ref: ref);
 });

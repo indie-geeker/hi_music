@@ -13,7 +13,6 @@ class CollectScreen extends ConsumerStatefulWidget {
 }
 
 class _CollectScreenState extends ConsumerState<CollectScreen> {
-
   //   // AppBar背景透明度
   double appBarOpacity = 1.0;
   double appBarHeight = kToolbarHeight;
@@ -27,12 +26,12 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
 
     scrollController.addListener(_scroll);
 
-    Future.microtask((){
+    Future.microtask(() {
       ref.read(homeViewModelProvider.notifier).loadData();
     });
   }
 
-  void _scroll(){
+  void _scroll() {
     double scrollOffset = scrollController.offset;
     double opactity = (scrollOffset / appBarHeight).clamp(0.0, 1.0);
     // if(opactity != appBarOpacity){
@@ -41,7 +40,6 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
     //     appBarTitleColor = Colors.white.withOpacity(opactity);
     //   });
     // }
-
   }
 
   @override
@@ -65,8 +63,7 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
                       ],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      stops: const [0.6,1.0]
-                  ),
+                      stops: const [0.6, 1.0]),
                 ),
               ),
             ),
@@ -88,14 +85,12 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
                           offset: const Offset(1, 1),
                           blurRadius: 2,
                         )
-                      ]
-                  ),
+                      ]),
                 ),
               ),
             )
           ],
         ),
-
       ),
       body: SafeArea(
         child: CustomScrollView(
@@ -105,24 +100,29 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
             //   child: BannerWidget(),
             // ),
             SliverAppBar(
-              expandedHeight: 205,  // 展开时的高度
-              collapsedHeight: 60,  // 收起时的高度
+              expandedHeight: 205,
+              // 展开时的高度
+              collapsedHeight: 60,
+              // 收起时的高度
               pinned: false,
-              floating: true,       // 向下滑动时立即显示
-              snap: true,           // 与floating配合，决定是否在滑动时直接展开到完整高度
+              floating: true,
+              // 向下滑动时立即显示
+              snap: true,
+              // 与floating配合，决定是否在滑动时直接展开到完整高度
               flexibleSpace: FlexibleSpaceBar(
                 background: BannerSlider(
                   height: 180,
                   items: state.bannerItems,
                   viewportFraction: 0.8,
                   stackOffset: 30,
-                  onPageChanged: (index){
+                  onPageChanged: (index) {
                     debugPrint("banner change to $index");
                     setState(() {
-                      bannerColor =  state.bannerItems[index].color;
+                      ref.read(homeViewModelProvider.notifier).onBannerSelected(index);
+                      bannerColor = state.bannerItems[index].color;
                     });
                   },
-                ),  // 展开时显示的内容
+                ), // 展开时显示的内容
                 // title: Text("title"),
                 // centerTitle: false,
                 // titlePadding: EdgeInsets.only(left: 16, bottom: 16),
@@ -131,17 +131,15 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
             SliverPersistentHeader(
               pinned: true, // 设置为true时，滚动时会固定在顶部
               delegate: _MySliverPersistentHeaderDelegate(
-                title: "热门推荐",
+                title: "最近播放",
               ),
             ),
 
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                    return _buildSongItem(context,state.songItems[index]);
-                  },
-                  childCount: state.songItems.length
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return _buildSongItem(context, state.songItems[index]);
+              },
+                  childCount: state.songItems.length),
             )
           ],
         ),
@@ -159,16 +157,28 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
           ),
           title: Text(songItem.title),
           subtitle: Text(songItem.artist),
-          trailing: Text(songItem.duration),
-          onTap: () => ref.read(homeViewModelProvider.notifier).onSongSelected(songItem),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(songItem.duration),
+              const SizedBox(height: 10),
+              Icon(
+                Icons.more_vert,
+                color: Colors.grey[400],
+              ),
+            ],
+          ),
+          onTap: () =>
+              ref.read(homeViewModelProvider.notifier).onSongSelected(songItem),
         ),
-        Divider(height: 1,color: Colors.grey[100],),
+        Divider(
+          height: 1,
+          color: Colors.grey[100],
+        ),
       ],
     );
   }
 }
-
-
 
 // 自定义的SliverPersistentHeaderDelegate实现
 class _MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
@@ -177,22 +187,47 @@ class _MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   _MySliverPersistentHeaderDelegate({
     required this.title,
-    this.height = 50.0,
+    this.height = 90.0,
   });
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      height: height,
       color: Colors.white,
       alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () {},
+            label: const Text(
+              "播放全部",
+              style: TextStyle(fontSize: 12),
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.only(left: 8,right: 8),
+              backgroundColor: Colors.green.withOpacity(0.1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            icon: const Icon(
+              Icons.play_circle,
+              color: Colors.green,
+            ),
+          )
+        ],
       ),
     );
   }

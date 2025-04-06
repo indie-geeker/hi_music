@@ -1,10 +1,16 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hi_music/presentation/common/banner_slider.dart';
 import 'package:hi_music/presentation/mobile/collect_screen.dart';
+import 'package:hi_music/presentation/mobile/music_screen.dart';
 import 'package:hi_music/presentation/mobile/widgets/double_back_to_close_app.dart';
 import 'package:hi_music/presentation/mobile/widgets/home_bottom_appbar.dart';
 import 'package:hi_music/presentation/viewmodels/home_viewmodel.dart';
+import 'package:hi_music/router/app_router.dart';
+
+import '../viewmodels/play_viewmodel.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -15,7 +21,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   List<Widget> pages = [
-    const Center(child: Text('音乐库', style: TextStyle(fontSize: 24))),
+    const MusicScreen(),
     const CollectScreen(),
     const Center(child: Text('个人中心', style: TextStyle(fontSize: 24))),
   ];
@@ -42,6 +48,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Uint8List? rawImage = ref.watch(playViewmodelProvider.select((state) => state.image));
+
     return Scaffold(
       extendBody: true,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -55,14 +63,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               : Colors.grey.withOpacity(0.7),
           shape: const CircleBorder(side: BorderSide.none),
           onPressed: () {
+            if(currentPage == 1){
+              // appRouter.push('/play');
+              showModalBottomSheet(context: context, builder: (context) => Container(
+                height: 600,
+                color: Colors.blue,
+              ));
+              return;
+            }
             setState(() {
               currentPage = 1;
               pageController.jumpToPage(1);
             });
           },
-          child: Icon(
+          child: rawImage != null ? ClipOval(
+            child: Image.memory(
+              rawImage,
+              width: 70,
+              height: 70,
+              fit: BoxFit.cover,
+            ),
+          ) : const Icon(
             Icons.music_note_outlined,
-            color: currentPage == 1 ? Colors.white : Colors.white70,
+            color: Colors.white70,
             size: 60.0,
           ),
         ),
@@ -83,7 +106,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildBody() {
     return DoubleBackToCloseApp(
         child: PageView(
-      // physics: const NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       controller: pageController,
       onPageChanged: (index) {
         setState(() {
