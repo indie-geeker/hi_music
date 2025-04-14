@@ -119,16 +119,7 @@ Future<void> loadData() async {
       );
     }
     state = state.copyWith(images: images);
-    
-    // 添加第三个 banner（示例中使用了固定颜色）
-    bannerItems.add(
-      BannerItem(
-        title: "Starboy",
-        artist: "The Weeknd",
-        imageUrl: "assets/images/img2.jpg",
-        color: const Color(0xFFEC441E),
-      ),
-    );
+
     
     // 模拟歌曲列表数据
     final songItems = List.generate(

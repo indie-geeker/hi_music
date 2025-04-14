@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hi_music/presentation/mobile/widgets/draggable_position_panel.dart';
 
 import '../common/banner_slider.dart';
 import '../viewmodels/home_viewmodel.dart';
@@ -19,6 +20,9 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
   final scrollController = ScrollController();
   Color appBarTitleColor = Colors.white;
   Color bannerColor = Colors.blue;
+
+  // 添加控制器
+  final _panelController = DraggablePanelController();
 
   @override
   void initState() {
@@ -45,6 +49,48 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(homeViewModelProvider);
+
+    return Stack(
+      children: [
+        Container(
+          color: Colors.blue,
+          child: SingleChildScrollView(
+            child: Container(
+              child: Column(
+                children: [
+                  Container(
+                    height: 800,
+                    color: Colors.red,
+                  ),
+                  Container(
+                    height: 800,
+                    color: Colors.greenAccent,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        DraggablePositionPanel(
+          top: 200,
+          controller: _panelController, // 传递控制器
+          child: Container(
+            color: Colors.green,
+          ),
+        ),
+        // 添加一个按钮来重新弹出面板（可选）
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: FloatingActionButton(
+            onPressed: () {
+              _panelController.open(); // 调用控制器的 open 方法
+            },
+            child: const Icon(Icons.arrow_upward),
+          ),
+        ),
+      ],
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -88,7 +134,7 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
                       ]),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
