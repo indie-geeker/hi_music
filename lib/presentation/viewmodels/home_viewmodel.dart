@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hi_music/presentation/viewmodels/play_viewmodel.dart';
+import 'package:hi_music/providers/panel_provider.dart';
 import 'package:hi_music/utils/palette_generator.dart';
 
 import '../common/banner_slider.dart';
@@ -160,6 +161,7 @@ Future<void> loadData() async {
   void onSongSelected(SongItem song) {
     // 在实际应用中，这里可能会播放选中的歌曲
     debugPrint('选择了歌曲: ${song.title}');
+    ref.read(panelStateProvider.notifier).open();
   }
   
   /// 切换排序方式

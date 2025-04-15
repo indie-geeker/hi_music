@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hi_music/presentation/mobile/widgets/draggable_position_panel.dart';
+import 'package:hi_music/providers/panel_provider.dart';
 
 import '../common/banner_slider.dart';
 import '../viewmodels/home_viewmodel.dart';
@@ -21,8 +22,6 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
   Color appBarTitleColor = Colors.white;
   Color bannerColor = Colors.blue;
 
-  // 添加控制器
-  final _panelController = DraggablePanelController();
 
   @override
   void initState() {
@@ -50,50 +49,8 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(homeViewModelProvider);
 
-    return Stack(
-      children: [
-        Container(
-          color: Colors.blue,
-          child: SingleChildScrollView(
-            child: Container(
-              child: Column(
-                children: [
-                  Container(
-                    height: 800,
-                    color: Colors.red,
-                  ),
-                  Container(
-                    height: 800,
-                    color: Colors.greenAccent,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        DraggablePositionPanel(
-          top: 200,
-          controller: _panelController, // 传递控制器
-          child: Container(
-            color: Colors.green,
-          ),
-        ),
-        // 添加一个按钮来重新弹出面板（可选）
-        Positioned(
-          bottom: 20,
-          right: 20,
-          child: FloatingActionButton(
-            onPressed: () {
-              _panelController.open(); // 调用控制器的 open 方法
-            },
-            child: const Icon(Icons.arrow_upward),
-          ),
-        ),
-      ],
-    );
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50],
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight),
         child: Stack(
@@ -164,7 +121,9 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
                   onPageChanged: (index) {
                     debugPrint("banner change to $index");
                     setState(() {
-                      ref.read(homeViewModelProvider.notifier).onBannerSelected(index);
+                      ref
+                          .read(homeViewModelProvider.notifier)
+                          .onBannerSelected(index);
                       bannerColor = state.bannerItems[index].color;
                     });
                   },
@@ -184,8 +143,7 @@ class _CollectScreenState extends ConsumerState<CollectScreen> {
             SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
                 return _buildSongItem(context, state.songItems[index]);
-              },
-                  childCount: state.songItems.length),
+              }, childCount: state.songItems.length),
             )
           ],
         ),
@@ -233,7 +191,7 @@ class _MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   _MySliverPersistentHeaderDelegate({
     required this.title,
-    this.height = 90.0,
+    this.height = 60.0, // 减小高度以匹配实际内容
   });
 
   @override
@@ -241,12 +199,11 @@ class _MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
       BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
       color: Colors.white,
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(horizontal: 12.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), // 添加内边距
+      height: height, // 确保容器高度与委托高度一致
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             title,
@@ -262,7 +219,7 @@ class _MySliverPersistentHeaderDelegate extends SliverPersistentHeaderDelegate {
               style: TextStyle(fontSize: 12),
             ),
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.only(left: 8,right: 8),
+              padding: const EdgeInsets.only(left: 8, right: 8),
               backgroundColor: Colors.green.withOpacity(0.1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),

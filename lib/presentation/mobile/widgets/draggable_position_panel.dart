@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hi_music/providers/panel_provider.dart';
 
 // 添加一个控制器类来控制面板
 class DraggablePanelController {
@@ -25,11 +27,11 @@ class DraggablePanelController {
   }
 }
 
-class DraggablePositionPanel extends StatefulWidget {
+class DraggablePositionPanel extends ConsumerStatefulWidget {
   const DraggablePositionPanel({
-    super.key, 
-    required this.child, 
-    this.top = 0, 
+    super.key,
+    required this.child,
+    this.top = 0,
     this.controller,
   });
 
@@ -38,13 +40,16 @@ class DraggablePositionPanel extends StatefulWidget {
   final DraggablePanelController? controller;
 
   @override
-  State<DraggablePositionPanel> createState() => _DraggablePositionPanelState();
+  ConsumerState<DraggablePositionPanel> createState() => _DraggablePositionPanelState();
 }
 
-class _DraggablePositionPanelState extends State<DraggablePositionPanel> {
+const _barHeight = 8.0;
+const _barPadding = 8.0;
+
+class _DraggablePositionPanelState extends ConsumerState<DraggablePositionPanel> {
   double? dy;
   bool showAnimation = false;
-  bool _isPanelVisible = true;
+  bool _isPanelVisible = false; // 默认为收起状态
 
   @override
   void initState() {
@@ -53,6 +58,17 @@ class _DraggablePositionPanelState extends State<DraggablePositionPanel> {
     if (widget.controller != null) {
       widget.controller!._registerState(this);
     }
+    
+    // 初始化时设置面板位置为收起状态
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isPanelVisible) {
+        final size = MediaQuery.of(context).size;
+        setState(() {
+          // dy = size.height - _barHeight - (_barPadding * 2); // 保留拖动区域
+          dy = size.height;
+        });
+      }
+    });
   }
 
   // 显示面板
@@ -63,6 +79,10 @@ class _DraggablePositionPanelState extends State<DraggablePositionPanel> {
         showAnimation = true;
         _isPanelVisible = true;
       });
+      // 同步更新Provider状态，但先检查当前Provider状态，避免循环
+      if (ref.read(panelStateProvider) == false) {
+        ref.read(panelStateProvider.notifier).open();
+      }
     }
   }
 
@@ -71,10 +91,15 @@ class _DraggablePositionPanelState extends State<DraggablePositionPanel> {
     if (_isPanelVisible) {
       setState(() {
         final size = MediaQuery.of(context).size;
-        dy = size.height - 4.0 - (8.0 * 2); // barHeight and barPadding
+        // dy = size.height - _barHeight - (_barPadding * 2); // 保留拖动区域
+        dy = size.height;
         showAnimation = true;
         _isPanelVisible = false;
       });
+      // 同步更新Provider状态，但先检查当前Provider状态，避免循环
+      if (ref.read(panelStateProvider) == true) {
+        ref.read(panelStateProvider.notifier).close();
+      }
     }
   }
 
@@ -89,15 +114,17 @@ class _DraggablePositionPanelState extends State<DraggablePositionPanel> {
 
   @override
   Widget build(BuildContext context) {
-    const barHeight = 4.0;
-    const barPadding = 8.0;
+    final size = MediaQuery.of(context).size;
+    // 计算面板的高度
+    final panelHeight = size.height - (dy ?? widget.top);
+
     return AnimatedPositioned(
         duration:
         showAnimation ? const Duration(milliseconds: 200) : Duration.zero,
         top: dy ?? widget.top,
         left: 0,
         right: 0,
-        bottom: 0,
+        height: panelHeight, // 设置明确的高度
         child: Container(
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -105,6 +132,7 @@ class _DraggablePositionPanelState extends State<DraggablePositionPanel> {
                 topLeft: Radius.circular(4), topRight: Radius.circular(4)),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               //滚动区域
               GestureDetector(
@@ -124,22 +152,31 @@ class _DraggablePositionPanelState extends State<DraggablePositionPanel> {
                     if (dy != null && dy! <= threshold) {
                       dy = widget.top;
                       _isPanelVisible = true;
+                      // 同步更新Provider状态，但先检查当前Provider状态，避免循环
+                      if (ref.read(panelStateProvider) == false) {
+                        ref.read(panelStateProvider.notifier).open();
+                      }
                     } else {
-                      dy = size.height - barHeight - (barPadding * 2);
+                     // dy = size.height - _barHeight - (_barPadding * 2); // 保留拖动区域
+                      dy = size.height;
                       _isPanelVisible = false;
+                      // 同步更新Provider状态，但先检查当前Provider状态，避免循环
+                      if (ref.read(panelStateProvider) == true) {
+                        ref.read(panelStateProvider.notifier).close();
+                      }
                     }
                     showAnimation = true;
                   });
                 },
                 child: Center(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: barPadding),
+                    padding: const EdgeInsets.symmetric(vertical: _barPadding),
                     child: Container(
                       width: 48,
-                      height: barHeight,
+                      height: _barHeight,
                       decoration: BoxDecoration(
                         color: const Color(0xffc2c2c2),
-                        borderRadius: BorderRadius.circular(barHeight),
+                        borderRadius: BorderRadius.circular(_barHeight),
                       ),
                     ),
                   ),

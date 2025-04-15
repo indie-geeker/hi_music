@@ -85,24 +85,20 @@ class _BannerSliderState extends State<BannerSlider> {
                   itemBuilder: (context, index) {
                     // 计算当前项与目标项的距离
                     double distance = 0;
-                    try {
-                      distance =
-                          (index - (_pageController.page ?? 0)).abs().toDouble();
-                    } catch (e) {
-                      debugPrint(e.toString());
-                      distance = (index - _currentPage).abs().toDouble();
-                    }
-                    // 根据距离计算缩放比，每个单位缩小 0.1
-                    double scale = 1.0 - (distance * 0.1);
-                    scale = scale.clamp(widget.inactiveScale, widget.activeScale);
-
-                    // 计算水平偏移量，创建层叠效果
+                    double scale = 1.0;
                     double horizontalOffset = 0;
-                    // 确保页面控制器已经初始化
-                    if (_pageController.position.haveDimensions) {
+                    
+                    // 确保页面控制器已经初始化并且有内容尺寸
+                    if (_pageController.hasClients && _pageController.position.hasContentDimensions) {
                       try {
-                        double page =
-                            _pageController.page ?? _currentPage.toDouble();
+                        // 计算距离
+                        distance = (index - (_pageController.page ?? 0)).abs().toDouble();
+                        // 根据距离计算缩放比，每个单位缩小 0.1
+                        scale = 1.0 - (distance * 0.1);
+                        scale = scale.clamp(widget.inactiveScale, widget.activeScale);
+
+                        // 计算水平偏移量，创建层叠效果
+                        double page = _pageController.page ?? _currentPage.toDouble();
                         // 右侧Item，向右偏移
                         if (index > page) {
                           horizontalOffset = -widget.stackOffset * (index - page);
@@ -112,8 +108,20 @@ class _BannerSliderState extends State<BannerSlider> {
                           horizontalOffset = widget.stackOffset * (page - index);
                         }
                       } catch (e) {
-                        // 忽略可能的异常
-                        debugPrint(e.toString());
+                        // 记录异常但不中断渲染
+                        debugPrint("BannerSlider计算错误: ${e.toString()}");
+                      }
+                    } else {
+                      // 如果控制器未初始化，使用当前页面索引计算
+                      distance = (index - _currentPage).abs().toDouble();
+                      scale = 1.0 - (distance * 0.1);
+                      scale = scale.clamp(widget.inactiveScale, widget.activeScale);
+                      
+                      // 使用简单的偏移计算
+                      if (index > _currentPage) {
+                        horizontalOffset = -widget.stackOffset;
+                      } else if (index < _currentPage) {
+                        horizontalOffset = widget.stackOffset;
                       }
                     }
 
@@ -121,7 +129,7 @@ class _BannerSliderState extends State<BannerSlider> {
                       offset: Offset(horizontalOffset, 0),
                       child: Transform.scale(
                         scale: scale,
-                        child: InkWell(
+                        child: GestureDetector(
                           onTap: () {
                             widget.onItemTap?.call(index);
                           },
