@@ -52,6 +52,8 @@ class _DraggablePositionPanelState extends ConsumerState<DraggablePositionPanel>
   double? dy;
   bool showAnimation = false;
   bool _isPanelVisible = false; // 默认为收起状态
+  double? _dragStartDy; // 记录拖动开始时的手指位置
+  double? _dragStartPanelTop; // 记录拖动开始时面板的顶部位置
 
   @override
   void initState() {
@@ -130,67 +132,81 @@ class _DraggablePositionPanelState extends ConsumerState<DraggablePositionPanel>
         left: 0,
         right: 0,
         height: panelHeight, // 设置明确的高度
-        child: Container(
-          height: panelHeight,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(4), topRight: Radius.circular(4)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              //滚动区域
-              GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onVerticalDragUpdate: (detail) {
-                    setState(() {
-                      showAnimation = false;
-                      dy = detail.globalPosition.dy <= widget.top
-                          ? widget.top
-                          : detail.globalPosition.dy;
-                    });
-                  },
-                  onVerticalDragEnd: (detail) {
-                    final size = MediaQuery.of(context).size;
-                    final threshold = (size.height - widget.top) / 2;
-                    setState(() {
-                      if (dy != null && dy! <= threshold) {
-                        dy = widget.top;
-                        _isPanelVisible = true;
-                        // 同步更新Provider状态，但先检查当前Provider状态，避免循环
-                        if (ref.read(panelStateProvider) == false) {
-                          ref.read(panelStateProvider.notifier).open();
-                        }
-                      } else {
-                        // dy = size.height - _barHeight - (_barPadding * 2); // 保留拖动区域
-                        dy = size.height;
-                        _isPanelVisible = false;
-                        // 同步更新Provider状态，但先检查当前Provider状态，避免循环
-                        if (ref.read(panelStateProvider) == true) {
-                          ref.read(panelStateProvider.notifier).close();
-                        }
-                      }
-                      showAnimation = true;
-                    });
-                  },
-                  child: SizedBox(
-                    height: _barHeight + _barPadding * 2,
-                    width: double.infinity,
-                    child: Center(
-                      child: Container(
-                        width: 48,
-                        height: _barHeight,
-                        decoration: BoxDecoration(
-                          color: const Color(0xffc2c2c2),
-                          borderRadius: BorderRadius.circular(_barHeight),
-                        ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragStart: (details) {
+            // 记录拖动开始时的手指位置和面板位置
+            _dragStartDy = details.globalPosition.dy;
+            _dragStartPanelTop = dy ?? widget.top;
+          },
+          onVerticalDragUpdate: (detail) {
+            if (_dragStartDy == null || _dragStartPanelTop == null) return;
+            
+            // 计算手指移动的距离
+            final dragDelta = detail.globalPosition.dy - _dragStartDy!;
+            // 计算新的面板位置，确保不会超出上边界
+            final newTop = _dragStartPanelTop! + dragDelta;
+            
+            setState(() {
+              showAnimation = false;
+              dy = newTop <= widget.top ? widget.top : newTop;
+            });
+          },
+          onVerticalDragEnd: (detail) {
+            // 重置拖动开始记录
+            _dragStartDy = null;
+            _dragStartPanelTop = null;
+            
+            final size = MediaQuery.of(context).size;
+            final threshold = (size.height - widget.top) / 2;
+            setState(() {
+              if (dy != null && dy! <= threshold) {
+                dy = widget.top;
+                _isPanelVisible = true;
+                // 同步更新Provider状态，但先检查当前Provider状态，避免循环
+                if (ref.read(panelStateProvider) == false) {
+                  ref.read(panelStateProvider.notifier).open();
+                }
+              } else {
+                // dy = size.height - _barHeight - (_barPadding * 2); // 保留拖动区域
+                dy = size.height;
+                _isPanelVisible = false;
+                // 同步更新Provider状态，但先检查当前Provider状态，避免循环
+                if (ref.read(panelStateProvider) == true) {
+                  ref.read(panelStateProvider.notifier).close();
+                }
+              }
+              showAnimation = true;
+            });
+          },
+          child: Container(
+            height: panelHeight,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(4), topRight: Radius.circular(4)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                //滚动区域指示器
+                SizedBox(
+                  height: _barHeight + _barPadding * 2,
+                  width: double.infinity,
+                  child: Center(
+                    child: Container(
+                      width: 48,
+                      height: _barHeight,
+                      decoration: BoxDecoration(
+                        color: const Color(0xffc2c2c2),
+                        borderRadius: BorderRadius.circular(_barHeight),
                       ),
                     ),
                   ),
                 ),
-              Expanded(child: widget.child)
-            ],
+                Expanded(child: widget.child)
+              ],
+            ),
           ),
         ));
   }
