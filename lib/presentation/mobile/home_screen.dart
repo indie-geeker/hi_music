@@ -118,11 +118,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         DraggablePositionPanel(
-            top: kToolbarHeight / 2,
+            top: kToolbarHeight,
             controller: _panelController,
-            child: Container(
-          color: Colors.green,
-        ))
+            child: SingleChildScrollView(
+              child: Container(
+                color: Colors.green,
+              ),
+            ))
       ],
     );
   }
